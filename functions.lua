@@ -1,7 +1,6 @@
 require "Kestral"
 require "Cowboy"
 require "Titanic"
-require "menu"
 require "humans"
 require "bugs"
 require "xEti"
@@ -42,12 +41,10 @@ function SetDefaultValues()
 	bigButtonHeight = bigPlayButton:getHeight()
 	buttonWidth = creditsButton:getWidth()
 	buttonHeight = creditsButton:getHeight()
-	WindowWidth = love.graphics.getWidth()
-	WindowHeight = love.graphics.getHeight()
-	ShipX, ShipY = WindowWidth/2, WindowHeight/2
+	ShipX, ShipY = love.window.getWidth()/2, love.window.getHeight()/2
 
 	xvel, yvel, accel, rotate, alpha, alpha2, timer, VolumeLevel, turn, nameLength, shipNameLength, spin, creditAmount, crewAmount, sc, gasAmount = 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-	creditsState,playState,optionsState,controlsState = 1,1,1,1
+	menuDrawState, scDrawState = 1, 1
 	normSpeed = 35
 	friction = 1.0085
 	bounce = 0.01
@@ -55,15 +52,17 @@ function SetDefaultValues()
 	pathState = math.random(0,3)
 	tankCap = 25
 
-	fullscreenEnabled, welcomeTo, pickYourShip, drawKestral, drawRMS, drawCowboy, inGame, Apressed, Bpressed, Cpressed, Dpressed, fadeMain, boughtGas = false,false,false,false,false,false,false,false,false,false,false,false,false
+	state = menuState
+	fullscreenEnabled, pickYourShip, drawKestral, drawRMS, drawCowboy, inGame, Apressed, Bpressed, Cpressed, Dpressed, fadeMain, boughtGas = false,false,false,false,false,false,false,false,false,false,false,false
 	MouseControls, drawMenuShip, flip = true, true, true
 
 	test1, test2, test2_5, test3 = false
 
-	love.audio.setVolume(5)
+	love.audio.setVolume(1)
 
 	hheadTable = {hhead1, hhead2, hhead3, hhead4, hhead5, hhead6, hhead7, hhead8, hhead9}
 	hbodyTable = {hbody1, hbody2, hbody3, hbody4, hbody5, hbody6}
+	musicVolumeTable = {[100] = "Music Volume: ! ! ! ! ! ! ! ! ! !",[90] = "Music Volume: ! ! ! ! ! ! ! ! ! .",[80] ="Music Volume: ! ! ! ! ! ! ! ! . .",[70] = "Music Volume: ! ! ! ! ! ! ! . . .",[60] = "Music Volume: ! ! ! ! ! ! . . . .",[50] = "Music Volume: ! ! ! ! . . . . .",[40] = "Music Volume: ! ! ! ! . . . . . .",[30] = "Music Volume: ! ! ! . . . . . . . .",[20] = "Music Volume: ! ! . . . . . . . .",[10] = "Music Volume: ! . . . . . . . . .",[0] = "Music Volume: . . . . . . . . . ."}
 	NameTable = {"Bob", "Mary", "John", "Luke", "Kendra", "Matthew", "Sips", "Jeremy", "Lomidia", "Kim", "Mandrew"}
 	ShipNameTable = {"Ship 1", "Ship Two", "Red Ship", "Ship Blue"}
 	PlanetNameTable = {"Zathura", "PXC-11ac", "Jumagi", "Dave", "Earth.2"}
@@ -93,7 +92,7 @@ function debugMenufnct()
 		if pkey == "1" then
 			alpha = 255
 			crewAmount, creditAmount, gasAmount = 5, 1000, 3
-			playState, optionsState, controlsState, creditsState = 3, 3, 3, 3
+			state = kestralState
 			pathState = 1
 			runMain, drawKestral, drawMainScreen, canRetire = true, true, true, true
 			name = "debug"
@@ -121,7 +120,7 @@ end
 
 function shootBullets()
 	if love.mouse.isDown('l') and player.heat <= 0 then
-			local direction = math.atan2(MouseY - ShipY, MouseX - ShipX)
+			local direction = math.atan2(love.mouse.getY() - ShipY, love.mouse.getX() - ShipX)
 			table.insert(bullets, {
 			x = ShipX,
 			y = ShipY,
@@ -155,17 +154,17 @@ function collisionDetect()
 		xvel = xvel * -1 * bounce
 		ShipX = 10
 	end
-	if ShipX+10 >= WindowWidth then
+	if ShipX+10 >= love.window.getWidth() then
 		xvel = xvel * -1 * bounce
-		ShipX = WindowWidth-10
+		ShipX = love.window.getWidth()-10
 	end
 	if ShipY-10 <= 0 then
 		yvel = yvel * -1 * bounce
 		ShipY = 10
 	end
-	if ShipY+10 >= WindowHeight then
+	if ShipY+10 >= love.window.getHeight() then
 		yvel = yvel * -1 * bounce
-		ShipY = WindowHeight-10
+		ShipY = love.window.getHeight()-10
 	end
 end
 
@@ -194,28 +193,22 @@ end
 function drawShip()
 	if MouseControls then
 			if drawMenuShip then
-				love.graphics.reset()
-			love.graphics.draw(menuShip, ShipX, ShipY, rotate + 1.6, 1.2, 1.2, 20, 20)
+				love.graphics.draw(menuShip, ShipX, ShipY, rotate + 1.6, 1.2, 1.2, 20, 20)
 			elseif drawKestral then
-				love.graphics.reset()
 				love.graphics.draw(kestralShip, ShipX, ShipY, rotate + 1.6, 1, 1, 20, 35)
 		    elseif drawRMS then
-		    	love.graphics.reset()
 		    	love.graphics.draw(titanicShip, ShipX, ShipY, rotate + 1.6, 1, 1, 20, 35)
 		    elseif drawCowboy then
-		    	love.graphics.reset()
 		    	love.graphics.circle("fill")
 		    else
 		    	love.graphics.print("broken")
 			end
 		elseif MouseControls == false then
 			if drawMenuShip then
-			love.graphics.draw(menuShip, ShipX, ShipY, turn + 1.6, 1.2, 1.2, 20, 20)
+				love.graphics.draw(menuShip, ShipX, ShipY, turn + 1.6, 1.2, 1.2, 20, 20)
 			elseif drawKestral then
-				love.graphics.reset()
 				love.graphics.circle("fill")
 		    elseif drawRMS then
-		    	love.graphics.reset()
 		    	love.graphics.circle("fill")
 		    elseif drawCowboy then
 		    	love.graphics.reset()
@@ -255,16 +248,7 @@ function keyboardControls()
 end
 
 function MouseControl()
-
-	if love.keyboard.isDown("w") then
-	if xvel > 5 then
-		while true do
-			accel = accel + 1
-			xvel = xvel + math.cos(rotate)*accel
-			yvel = yvel + math.sin(rotate)*accel
-			break
-		end
-	end
+  if love.keyboard.isDown("w") then
 	accel = accel + .5
 	xvel = math.cos(rotate)*accel
 	yvel = math.sin(rotate)*accel
@@ -281,8 +265,8 @@ function MouseControl()
 		friction = 1.05
 		accel = accel - 5
 	else
-		friction = 1.0085
-	end
+		friction = 1.01
+  end
 end
 
 function testforButtonClick(Mx,My,tlx,tly,w,h)
@@ -294,96 +278,96 @@ end
 
 function drawABC(x,y,letters)
 	if letters == "a" then
-		love.graphics.draw(AButton, WindowWidth/2, WindowHeight - y, r, 1, 1, 37, 37)
-		if testforButtonClick(ShipX, ShipY, WindowWidth/2-37, (WindowHeight - y)-37, 75, 75) then
-			love.graphics.draw(AButton, WindowWidth/2, WindowHeight - y, r, 1.1, 1.1, 37, 37)
+		love.graphics.draw(AButton, love.window.getWidth()/2, love.window.getHeight() - y, r, 1, 1, 37, 37)
+		if testforButtonClick(ShipX, ShipY, love.window.getWidth()/2-37, (love.window.getHeight() - y)-37, 75, 75) then
+			love.graphics.draw(AButton, love.window.getWidth()/2, love.window.getHeight() - y, r, 1.1, 1.1, 37, 37)
 		else
-			love.graphics.draw(AButton, WindowWidth/2, WindowHeight - y, r, 1, 1, 37, 37)
+			love.graphics.draw(AButton, love.window.getWidth()/2, love.window.getHeight() - y, r, 1, 1, 37, 37)
 		end
 	end
 	if letters == "ab" then
-		love.graphics.draw(AButton, WindowWidth/2 - x, WindowHeight - y, r, 1, 1, 37, 37)
-		love.graphics.draw(BButton, WindowWidth/2 + x, WindowHeight - y, r, 1, 1, 37, 37)
-		if testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) - x, (WindowHeight - y)-37, 75, 75) then
-			love.graphics.draw(AButton, WindowWidth/2 - x, WindowHeight - y, r, 1.1, 1.1, 37, 37)
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) + x, (WindowHeight - y)-37, 75, 75) then
-			love.graphics.draw(BButton, WindowWidth/2 + x, WindowHeight - y, r, 1.1, 1.1, 37, 37)
+		love.graphics.draw(AButton, love.window.getWidth()/2 - x, love.window.getHeight() - y, r, 1, 1, 37, 37)
+		love.graphics.draw(BButton, love.window.getWidth()/2 + x, love.window.getHeight() - y, r, 1, 1, 37, 37)
+		if testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) - x, (love.window.getHeight() - y)-37, 75, 75) then
+			love.graphics.draw(AButton, love.window.getWidth()/2 - x, love.window.getHeight() - y, r, 1.1, 1.1, 37, 37)
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) + x, (love.window.getHeight() - y)-37, 75, 75) then
+			love.graphics.draw(BButton, love.window.getWidth()/2 + x, love.window.getHeight() - y, r, 1.1, 1.1, 37, 37)
 		else
-			love.graphics.draw(AButton, WindowWidth/2 - x, WindowHeight - y, r, 1, 1, 37, 37)
-			love.graphics.draw(BButton, WindowWidth/2 + x, WindowHeight - y, r, 1, 1, 37, 37)
+			love.graphics.draw(AButton, love.window.getWidth()/2 - x, love.window.getHeight() - y, r, 1, 1, 37, 37)
+			love.graphics.draw(BButton, love.window.getWidth()/2 + x, love.window.getHeight() - y, r, 1, 1, 37, 37)
 		end
 	end
 	if letters == "abc" then
-		love.graphics.draw(AButton, WindowWidth/2 - x, WindowHeight - y, r, 1, 1, 37, 37)
-		love.graphics.draw(BButton, WindowWidth/2, WindowHeight - y, r, 1, 1, 37, 37)
-		love.graphics.draw(CButton, WindowWidth/2 + x, WindowHeight - y, r, 1, 1, 37, 37)
-		if testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) - x, (WindowHeight - y)-37, 75, 75) then
-			love.graphics.draw(AButton, WindowWidth/2 - x, WindowHeight - y, r, 1.1, 1.1, 37, 37)
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37), (WindowHeight - y)-37, 75, 75) then
-			love.graphics.draw(BButton, WindowWidth/2, WindowHeight - y, r, 1.1, 1.1, 37, 37)
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) + x, (WindowHeight - y)-37, 75, 75) then
-			love.graphics.draw(CButton, WindowWidth/2 + x, WindowHeight - y, r, 1.1, 1.1, 37, 37)
+		love.graphics.draw(AButton, love.window.getWidth()/2 - x, love.window.getHeight() - y, r, 1, 1, 37, 37)
+		love.graphics.draw(BButton, love.window.getWidth()/2, love.window.getHeight() - y, r, 1, 1, 37, 37)
+		love.graphics.draw(CButton, love.window.getWidth()/2 + x, love.window.getHeight() - y, r, 1, 1, 37, 37)
+		if testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) - x, (love.window.getHeight() - y)-37, 75, 75) then
+			love.graphics.draw(AButton, love.window.getWidth()/2 - x, love.window.getHeight() - y, r, 1.1, 1.1, 37, 37)
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37), (love.window.getHeight() - y)-37, 75, 75) then
+			love.graphics.draw(BButton, love.window.getWidth()/2, love.window.getHeight() - y, r, 1.1, 1.1, 37, 37)
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) + x, (love.window.getHeight() - y)-37, 75, 75) then
+			love.graphics.draw(CButton, love.window.getWidth()/2 + x, love.window.getHeight() - y, r, 1.1, 1.1, 37, 37)
 		else
-			love.graphics.draw(AButton, WindowWidth/2 - x, WindowHeight - y, r, 1, 1, 37, 37)
-			love.graphics.draw(BButton, WindowWidth/2, WindowHeight - y, r, 1, 1, 37, 37)
-			love.graphics.draw(CButton, WindowWidth/2 + x, WindowHeight - y, r, 1, 1, 37, 37)
+			love.graphics.draw(AButton, love.window.getWidth()/2 - x, love.window.getHeight() - y, r, 1, 1, 37, 37)
+			love.graphics.draw(BButton, love.window.getWidth()/2, love.window.getHeight() - y, r, 1, 1, 37, 37)
+			love.graphics.draw(CButton, love.window.getWidth()/2 + x, love.window.getHeight() - y, r, 1, 1, 37, 37)
 		end
 	end
 	if letters == "abcd" then
-		love.graphics.draw(AButton, WindowWidth/2 - (x + (x/2)), WindowHeight - y, r, 1, 1, 37, 37)
-		love.graphics.draw(BButton, WindowWidth/2 - (x/2), WindowHeight - y, r, 1, 1, 37, 37)
-		love.graphics.draw(CButton, WindowWidth/2 + (x/2), WindowHeight - y, r, 1, 1, 37, 37)
-		love.graphics.draw(DButton, WindowWidth/2 + (x + (x/2)), WindowHeight - y, r, 1, 1, 37, 37)
-		if testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) - (x + (x/2)), (WindowHeight - y)-37, 75, 75) then
-			love.graphics.draw(AButton, WindowWidth/2 - (x + (x/2)), WindowHeight - y, r, 1.1, 1.1, 37, 37)
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) - x/2, (WindowHeight - y)-37, 75, 75) then
-			love.graphics.draw(BButton, WindowWidth/2 - x/2, WindowHeight - y, r, 1.1, 1.1, 37, 37)
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) + x/2, (WindowHeight - y)-37, 75, 75) then
-			love.graphics.draw(CButton, WindowWidth/2 + x/2, WindowHeight - y, r, 1.1, 1.1, 37, 37)
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) + (x + (x/2)), (WindowHeight - y)-37, 75, 75) then
-			love.graphics.draw(DButton, WindowWidth/2 + (x + (x/2)), WindowHeight - y, r, 1.1, 1.1, 37, 37)
+		love.graphics.draw(AButton, love.window.getWidth()/2 - (x + (x/2)), love.window.getHeight() - y, r, 1, 1, 37, 37)
+		love.graphics.draw(BButton, love.window.getWidth()/2 - (x/2), love.window.getHeight() - y, r, 1, 1, 37, 37)
+		love.graphics.draw(CButton, love.window.getWidth()/2 + (x/2), love.window.getHeight() - y, r, 1, 1, 37, 37)
+		love.graphics.draw(DButton, love.window.getWidth()/2 + (x + (x/2)), love.window.getHeight() - y, r, 1, 1, 37, 37)
+		if testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) - (x + (x/2)), (love.window.getHeight() - y)-37, 75, 75) then
+			love.graphics.draw(AButton, love.window.getWidth()/2 - (x + (x/2)), love.window.getHeight() - y, r, 1.1, 1.1, 37, 37)
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) - x/2, (love.window.getHeight() - y)-37, 75, 75) then
+			love.graphics.draw(BButton, love.window.getWidth()/2 - x/2, love.window.getHeight() - y, r, 1.1, 1.1, 37, 37)
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) + x/2, (love.window.getHeight() - y)-37, 75, 75) then
+			love.graphics.draw(CButton, love.window.getWidth()/2 + x/2, love.window.getHeight() - y, r, 1.1, 1.1, 37, 37)
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) + (x + (x/2)), (love.window.getHeight() - y)-37, 75, 75) then
+			love.graphics.draw(DButton, love.window.getWidth()/2 + (x + (x/2)), love.window.getHeight() - y, r, 1.1, 1.1, 37, 37)
 		else		
-			love.graphics.draw(AButton, WindowWidth/2 - (x + (x/2)), WindowHeight - y, r, 1, 1, 37, 37)
-			love.graphics.draw(BButton, WindowWidth/2 - x/2, WindowHeight - y, r, 1, 1, 37, 37)
-			love.graphics.draw(CButton, WindowWidth/2 + x/2, WindowHeight - y, r, 1, 1, 37, 37)
-			love.graphics.draw(DButton, WindowWidth/2 + (x + (x/2)), WindowHeight - y, r, 1, 1, 37, 37)
+			love.graphics.draw(AButton, love.window.getWidth()/2 - (x + (x/2)), love.window.getHeight() - y, r, 1, 1, 37, 37)
+			love.graphics.draw(BButton, love.window.getWidth()/2 - x/2, love.window.getHeight() - y, r, 1, 1, 37, 37)
+			love.graphics.draw(CButton, love.window.getWidth()/2 + x/2, love.window.getHeight() - y, r, 1, 1, 37, 37)
+			love.graphics.draw(DButton, love.window.getWidth()/2 + (x + (x/2)), love.window.getHeight() - y, r, 1, 1, 37, 37)
 		end
 	end
 end
 
 function testABC(x,y,letters)
 	if letters == "a" then
-		if testforButtonClick(ShipX, ShipY, WindowWidth/2-37, (WindowHeight - y)-37, 75, 75) then
+		if testforButtonClick(ShipX, ShipY, love.window.getWidth()/2-37, (love.window.getHeight() - y)-37, 75, 75) then
 			testA = true
 		else
 			testA = false
 		end
 	elseif letters == "ab" then
-		if testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) - x, (WindowHeight - y)-37, 75, 75) then
+		if testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) - x, (love.window.getHeight() - y)-37, 75, 75) then
 			testA = true
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) + x, (WindowHeight - y)-37, 75, 75) then
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) + x, (love.window.getHeight() - y)-37, 75, 75) then
 			testB = true
 		else
 			testA, testB = false, false
 		end
 	elseif letters == "abc" then
-		if testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) - x, (WindowHeight - y)-37, 75, 75) then
+		if testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) - x, (love.window.getHeight() - y)-37, 75, 75) then
 			testA = true
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37), (WindowHeight - y)-37, 75, 75) then
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37), (love.window.getHeight() - y)-37, 75, 75) then
 			testB = true
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) + x, (WindowHeight - y)-37, 75, 75) then
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) + x, (love.window.getHeight() - y)-37, 75, 75) then
 			testC = true
 		else
 			testA, testB, testC = false, false, false
 		end
 	elseif letters == "abcd" then
-		if testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) - (x + (x/2)), (WindowHeight - y)-37, 75, 75) then
+		if testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) - (x + (x/2)), (love.window.getHeight() - y)-37, 75, 75) then
 			testA = true
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) - x/2, (WindowHeight - y)-37, 75, 75) then
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) - x/2, (love.window.getHeight() - y)-37, 75, 75) then
 			testB = true
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) + x/2, (WindowHeight - y)-37, 75, 75) then
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) + x/2, (love.window.getHeight() - y)-37, 75, 75) then
 			testC = true
-		elseif testforButtonClick(ShipX, ShipY, (WindowWidth/2-37) + (x + (x/2)), (WindowHeight - y)-37, 75, 75) then
+		elseif testforButtonClick(ShipX, ShipY, (love.window.getWidth()/2-37) + (x + (x/2)), (love.window.getHeight() - y)-37, 75, 75) then
 			testD = true
 		else
 			testA, testB, testC, testD = false, false, false, false
@@ -391,48 +375,15 @@ function testABC(x,y,letters)
 	end
 end
 
-function drawShipSelect()
-	if drawShipSelectScreen then
-			if alpha ~= 256 then
-				fade("in")
-			end
-		love.graphics.setColor(255,255,255,alpha)
-		love.graphics.printf("Welcome, " .. name .. ".", 1, WindowHeight/2 - 50, WindowWidth, "center", r, sx, sy, 25)
-		if alpha >= 255 then
-			love.graphics.printf("\n\nPlease select your ship.", 1, WindowHeight/2 - 50, WindowWidth, "center", r, sx, sy, 25)
-			love.graphics.draw(kestralShip, WindowWidth/2 - 350, WindowHeight - 175, math.pi/2, sx, sy, 21, 36, kx, ky)
-			love.graphics.draw(titanicShip, WindowWidth/2, WindowHeight - 175, math.pi/2, sx, sy, 16, 54)
-			love.graphics.print("Kestral", WindowWidth/2 - 350, WindowHeight - 50, r, sx, sy, BMSpaceFont:getWidth("Kestral")/2)
-			love.graphics.print("RMS Titanic", WindowWidth/2, WindowHeight - 50, r, sx, sy, BMSpaceFont:getWidth("RMS Titanic")/2)
-			love.graphics.print("US FUCKING COWBOY", WindowWidth/2 + 350, WindowHeight - 50, r, sx, sy, BMSpaceFont:getWidth("US FUCKING COWBOY")/2)
-			drawABC(350, 100, "abc")
-			testABC(350, 100, "abc")
-			if Apressed then
-				alpha = 0
-				drawKestral, drawShipRenameScreen = true, true
-				drawRMS, drawCowboy, drawMenuShip, Apressed, drawShipSelectScreen = false, false, false, false, false
-			elseif Bpressed then
-				alpha = 0
-				drawRMS, drawShipRenameScreen = true, true
-				drawKestral, drawCowboy, drawMenuShip, Bpressed, drawShipSelectScreen = false, false, false, false, false
-			elseif Cpressed then
-				alpha = 0
-				drawCowboy, drawShipRenameScreen = true, true
-				drawKestral, drawRMS, drawMenuShip, Cpreseed, drawShipSelectScreen = false, false, false, false, false
-			end
-		end
-	end
-end
-
 function drawShipRename()
 	if drawShipRenameScreen then
-		love.graphics.printf("Would you like to rename your ship?\n\nPress Y for yes or N for no.", 1, WindowHeight/2 - 50, WindowWidth, "center", r, sx, sy, 25)
+		love.graphics.printf("Would you like to rename your ship?\n\nPress Y for yes or N for no.", 1, love.window.getHeight()/2 - 50, love.window.getWidth(), "center", r, sx, sy, 25)
 	end
 	if drawShipRenameScreen2 then
-		love.graphics.printf("What would you like to name your ship?", 1, WindowHeight/2 - 50, WindowWidth, "center", r, sx, sy, 25)
+		love.graphics.printf("What would you like to name your ship?", 1, love.window.getHeight()/2 - 50, love.window.getWidth(), "center", r, sx, sy, 25)
 	end
 	if printShipName then
-		love.graphics.print(shipName, WindowWidth/2, WindowHeight/2 + 100, r, sx, sy, shipNameLength*12)
+		love.graphics.print(shipName, love.window.getWidth()/2, love.window.getHeight()/2 + 100, r, sx, sy, shipNameLength*12)
 	end
 end
 
@@ -576,21 +527,21 @@ end
 
 function drawGas()
 	if runGas then
-		love.graphics.draw(hheadTable[gasHead], WindowWidth/2 - 50, y, r, 1, 1)
-		love.graphics.draw(hbodyTable[gasBody], WindowWidth/2 - 50, y, r, 1, 1)
+		love.graphics.draw(hheadTable[gasHead], love.window.getWidth()/2 - 50, y, r, 1, 1)
+		love.graphics.draw(hbodyTable[gasBody], love.window.getWidth()/2 - 50, y, r, 1, 1)
 		drawABC(150,300,"abcd")
-		love.graphics.print("    1 gal/\n150 credits", WindowWidth/2 - 225, WindowHeight - 400, r, sx, sy, BMSpaceFont:getWidth("150 credits")/2, oy, kx, ky)
-		love.graphics.print("    5 gal/\n500 credits", WindowWidth/2 - 75, WindowHeight - 250, r, sx, sy, BMSpaceFont:getWidth("500 credits")/2, oy, kx, ky)
-		love.graphics.print("    10 gal/\n1000 credits", WindowWidth/2 + 75, WindowHeight - 400, r, sx, sy, BMSpaceFont:getWidth("1000 credits")/2, oy, kx, ky)
-		love.graphics.print("Fill up your tank!\n  5000 credits.", WindowWidth/2 + 250, WindowHeight - 250, -math.pi/6, sx, sy, BMSpaceFont:getWidth("Fill up your tank!")/2, oy, kx, ky)
+		love.graphics.print("    1 gal/\n150 credits", love.window.getWidth()/2 - 225, love.window.getHeight() - 400, r, sx, sy, BMSpaceFont:getWidth("150 credits")/2, oy, kx, ky)
+		love.graphics.print("    5 gal/\n500 credits", love.window.getWidth()/2 - 75, love.window.getHeight() - 250, r, sx, sy, BMSpaceFont:getWidth("500 credits")/2, oy, kx, ky)
+		love.graphics.print("    10 gal/\n1000 credits", love.window.getWidth()/2 + 75, love.window.getHeight() - 400, r, sx, sy, BMSpaceFont:getWidth("1000 credits")/2, oy, kx, ky)
+		love.graphics.print("Fill up your tank!\n  5000 credits.", love.window.getWidth()/2 + 250, love.window.getHeight() - 250, -math.pi/6, sx, sy, BMSpaceFont:getWidth("Fill up your tank!")/2, oy, kx, ky)
 		if boughtGas ~= true then
-			love.graphics.printf("Welcome, to the gas station! Would you like to buy some gas?", 1, WindowHeight - 550, WindowWidth, "center")	
-			love.graphics.printf("Your tank can hold " .. tankCap .. " gallons!\nYou have " .. creditAmount .. " credits.\nYou have " .. gasAmount .. " gallons of gas.", 1, WindowHeight - 525, WindowWidth, "center")
+			love.graphics.printf("Welcome, to the gas station! Would you like to buy some gas?", 1, love.window.getHeight() - 550, love.window.getWidth(), "center")	
+			love.graphics.printf("Your tank can hold " .. tankCap .. " gallons!\nYou have " .. creditAmount .. " credits.\nYou have " .. gasAmount .. " gallons of gas.", 1, love.window.getHeight() - 525, love.window.getWidth(), "center")
 		else
 			if enoughCredits then
-				love.graphics.printf("Enjoy your gas!", 1, WindowHeight - 500, WindowWidth, "center")
+				love.graphics.printf("Enjoy your gas!", 1, love.window.getHeight() - 500, love.window.getWidth(), "center")
 			else
-				love.graphics.printf("You don't have enough credits!", 1, WindowHeight - 500, WindowWidth, "center")
+				love.graphics.printf("You don't have enough credits!", 1, love.window.getHeight() - 500, love.window.getWidth(), "center")
 			end
 		end
 	end
@@ -605,23 +556,6 @@ function setupChar()
 	end
 	if drawShipRenameScreen then
 		drawShipSelectScreen = false
-	end
-end
-
-function welcomeToInput()
-	if welcomeTo then
-		if pkey == "backspace" then 
-			name = name:sub(1, -2)
-			nameLength = nameLength - 1
-			if nameLength <= 0 then
-				nameLength = 0
-			end
-		end
-		if pkey == "return" then
-			pickYourShip, drawMenuShip = true, true
-			welcomeTo, printName = false, false
-			playState = 3
-		end
 	end
 end
 
@@ -671,19 +605,19 @@ function retireScreen()
 		end
 	end
 	if drawRetire then
-		love.graphics.printf("Congratulations, " .. name .. "!", 1, sc + 50, WindowWidth, "center", r, sx, sy, ox, oy, kx, ky)
-		love.graphics.printf("You and your crew have decided to retire.", 1, sc + 75, WindowWidth, "center", r, sx, sy, ox, oy, kx, ky)
-		love.graphics.printf("You earned " .. creditAmount .. " credits and have "  .. crewAmount .. " crew members left.", 1, sc + 100, WindowWidth, "center", r, sx, sy, ox, oy, kx, ky)
+		love.graphics.printf("Congratulations, " .. name .. "!", 1, sc + 50, love.window.getWidth(), "center", r, sx, sy, ox, oy, kx, ky)
+		love.graphics.printf("You and your crew have decided to retire.", 1, sc + 75, love.window.getWidth(), "center", r, sx, sy, ox, oy, kx, ky)
+		love.graphics.printf("You earned " .. creditAmount .. " credits and have "  .. crewAmount .. " crew members left.", 1, sc + 100, love.window.getWidth(), "center", r, sx, sy, ox, oy, kx, ky)
 		if creditAmount > 1000000000 then
-			love.graphics.printf("Holy shit, you're a billionare! Try not to get robbed, and enjoy life!!", 1, sc + 125, WindowWidth, "center", r, sx, sy, ox, oy, kx, ky)
+			love.graphics.printf("Holy shit, you're a billionare! Try not to get robbed, and enjoy life!!", 1, sc + 125, love.window.getWidth(), "center", r, sx, sy, ox, oy, kx, ky)
 		elseif creditAmount > 1000000 then
-			love.graphics.printf("A million credits. You'll never want for anything again.", 1, sc + 125, WindowWidth, "center", r, sx, sy, ox, oy, kx, ky)
+			love.graphics.printf("A million credits. You'll never want for anything again.", 1, sc + 125, love.window.getWidth(), "center", r, sx, sy, ox, oy, kx, ky)
 		elseif creditAmount > 1000 then
-			love.graphics.printf("With more than a thousand credits, you and your crew lived large for about a month, before becoming totally broke. Not really much of a retirement.", 1, 75, WindowWidth, "center", r, sx, sy, ox, oy, kx, ky)
+			love.graphics.printf("With more than a thousand credits, you and your crew lived large for about a month, before becoming totally broke. Not really much of a retirement.", 1, 75, love.window.getWidth(), "center", r, sx, sy, ox, oy, kx, ky)
 		elseif creditAmount > 150 then
-			love.graphics.printf("Did you even play the game?", 1, sc + 125, WindowWidth, "center", r, sx, sy, ox, oy, kx, ky)
+			love.graphics.printf("Did you even play the game?", 1, sc + 125, love.window.getWidth(), "center", r, sx, sy, ox, oy, kx, ky)
 		else 
-			love.graphics.printf("Retiring with no money? Really?", 1, sc + 125, WindowWidth, "center", r, sx, sy, ox, oy, kx, ky)
+			love.graphics.printf("Retiring with no money? Really?", 1, sc + 125, love.window.getWidth(), "center", r, sx, sy, ox, oy, kx, ky)
 		end
 		if timer >= 10 then
 			creditsState = 2
@@ -691,26 +625,12 @@ function retireScreen()
 	end
 end
 
-function linefade(lineamount)
-	l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15 = false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
-	if lineamount == 1 then
-		l1 = true
-		fade("in")
-	end
-	if lineamount == 2 then
-		l1 = true
-		fade("in")
-		if alpha then
-		end
-	end
-end
-
 function testShipClick()
 	if drawKestral then
-		if testforButtonClick(MouseX, MouseY, ShipX, ShipY, 42, 74) then
+		if testforButtonClick(love.mouse.getX(), love.mouse.getY(), ShipX, ShipY, 42, 74) then
 		end
 	elseif drawRMS then
-		if testforButtonClick(MouseX, MouseY, ShipX, ShipY, 34, 108) then
+		if testforButtonClick(love.mouse.getX(), love.mouse.getY(), ShipX, ShipY, 34, 108) then
 		end
 	elseif drawCowboy then
 	end
